@@ -1,0 +1,49 @@
+# ============================================================================
+# PROJECT.yaml - Archivo de metadatos del proyecto
+# ============================================================================
+#
+# PARA CLAUDE (IA): Este archivo es leido por el Project Manager (99999) para:
+#   1. Detectar el estado del proyecto (online/offline)
+#   2. Saber que puertos monitorear
+#   3. Entender la arquitectura del proyecto
+#
+# INSTRUCCIONES PARA CLAUDE:
+#   - Si haces cambios de version, actualiza 'project.version'
+#   - Siempre actualiza 'updated_at' y 'updated_by' al modificar
+#   - El 'updated_by' debe ser tu identificador (ej: claude-077)
+#
+# NO MODIFICAR SIN RAZON:
+#   - project.code (identificador unico)
+#   - server.location (donde corre el proyecto)
+#   - server.base_path (ruta del proyecto)
+#
+# ============================================================================
+
+project:
+  code: web26-077
+  name: Live Conference Translator
+  version: 0.1.0
+  status: development
+  description: Captura audio del sistema (WASAPI), transcribe con Whisper y traduce en tiempo real
+
+server:
+  location: windows
+  base_path: C:\Users\abela\prweb\public\live-conference-translator
+
+service:
+  type: none
+  expect_offline: true
+
+urls:
+  repository: https://github.com/abelardodiaz/live-conference-translator
+
+stack:
+  primary: python
+  components:
+    - PyAudioWPatch
+    - faster-whisper
+    - deep-translator
+    - numpy
+
+updated_at: "2026-04-07T12:00:00"
+updated_by: claude-996
