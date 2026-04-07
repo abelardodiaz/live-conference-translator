@@ -29,42 +29,51 @@ def _format_timestamp_vtt(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
-def write_txt(segments: list[dict], output_path: str, lang_key: str = "english"):
+def write_txt(segments: list[dict], output_path: str, text_key: str = "source"):
     """Write plain text transcript with timestamps."""
     with open(output_path, "w", encoding="utf-8") as f:
         for seg in segments:
             ts = _format_timestamp_txt(seg["start"])
-            f.write(f"{ts} {seg[lang_key]}\n")
+            text = seg.get(text_key, seg.get("text", ""))
+            f.write(f"{ts} {text}\n")
     print(f"[Writer] {output_path}")
 
 
-def write_srt(segments: list[dict], output_path: str, lang_key: str = "english"):
+def write_srt(segments: list[dict], output_path: str, text_key: str = "source"):
     """Write SRT subtitle file."""
     with open(output_path, "w", encoding="utf-8") as f:
         for i, seg in enumerate(segments, 1):
             start = _format_timestamp_srt(seg["start"])
             end = _format_timestamp_srt(seg["end"])
+            text = seg.get(text_key, seg.get("text", ""))
             f.write(f"{i}\n")
             f.write(f"{start} --> {end}\n")
-            f.write(f"{seg[lang_key]}\n\n")
+            f.write(f"{text}\n\n")
     print(f"[Writer] {output_path}")
 
 
-def write_vtt(segments: list[dict], output_path: str, lang_key: str = "english"):
+def write_vtt(segments: list[dict], output_path: str, text_key: str = "source"):
     """Write WebVTT subtitle file."""
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("WEBVTT\n\n")
         for i, seg in enumerate(segments, 1):
             start = _format_timestamp_vtt(seg["start"])
             end = _format_timestamp_vtt(seg["end"])
+            text = seg.get(text_key, seg.get("text", ""))
             f.write(f"{i}\n")
             f.write(f"{start} --> {end}\n")
-            f.write(f"{seg[lang_key]}\n\n")
+            f.write(f"{text}\n\n")
     print(f"[Writer] {output_path}")
 
 
-def write_all(segments: list[dict], output_dir: str, base_name: str):
-    """Write all formats for both languages."""
+def write_all(
+    segments: list[dict],
+    output_dir: str,
+    base_name: str,
+    source_lang: str = "en",
+    target_lang: str | None = "es",
+):
+    """Write all formats. If target_lang is None, only source files are generated."""
     os.makedirs(output_dir, exist_ok=True)
 
     # Sanitize filename
@@ -72,16 +81,20 @@ def write_all(segments: list[dict], output_dir: str, base_name: str):
     safe_name = safe_name[:80].strip()
 
     files = []
-    for lang_key, lang_code in [("english", "en"), ("spanish", "es")]:
-        # Check if segments have this key
-        if not segments or lang_key not in segments[0]:
-            continue
 
-        base = os.path.join(output_dir, f"{safe_name}_{lang_code}")
+    # Source language files
+    base = os.path.join(output_dir, f"{safe_name}_{source_lang}")
+    write_txt(segments, f"{base}.txt", "source")
+    write_srt(segments, f"{base}.srt", "source")
+    write_vtt(segments, f"{base}.vtt", "source")
+    files.extend([f"{base}.txt", f"{base}.srt", f"{base}.vtt"])
 
-        write_txt(segments, f"{base}.txt", lang_key)
-        write_srt(segments, f"{base}.srt", lang_key)
-        write_vtt(segments, f"{base}.vtt", lang_key)
+    # Translated language files (only if translation was done)
+    if target_lang and any("translated" in seg for seg in segments):
+        base = os.path.join(output_dir, f"{safe_name}_{target_lang}")
+        write_txt(segments, f"{base}.txt", "translated")
+        write_srt(segments, f"{base}.srt", "translated")
+        write_vtt(segments, f"{base}.vtt", "translated")
         files.extend([f"{base}.txt", f"{base}.srt", f"{base}.vtt"])
 
     return files

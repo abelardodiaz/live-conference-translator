@@ -47,6 +47,9 @@ python main.py --url "https://youtube.com/watch?v=xxxxx"
 # Desde archivo local
 python main.py --file "C:\Users\abela\Downloads\conferencia.mp4"
 
+# Audio en español (solo transcribe, sin traducir)
+python main.py --url "https://..." --source-lang es
+
 # Con opciones
 python main.py --url "https://..." --model medium --target-lang pt
 python main.py --file video.mp3 --output-dir "C:\mis-transcripts"
@@ -76,6 +79,7 @@ La primera vez descarga el modelo Whisper (~500MB para `small`).
 | `--url URL` | URL de YouTube u otro sitio para procesar offline |
 | `--file PATH` | Archivo local de audio/video para procesar offline |
 | `--model NAME` | Modelo Whisper: tiny, base, small, medium, large-v3 |
+| `--source-lang XX` | Idioma del audio: en, es, fr, etc. (default: en) |
 | `--mic` | Capturar micrófono en vez de audio del sistema |
 | `--device N` | Índice de dispositivo para audio del sistema |
 | `--mic-device N` | Índice de dispositivo para micrófono |

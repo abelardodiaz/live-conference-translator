@@ -46,6 +46,11 @@ def parse_args():
              "Options: tiny, base, small, medium, large-v3, distil-large-v3",
     )
     parser.add_argument(
+        "--source-lang",
+        default=None,
+        help=f"Source language of audio (default: {config.SOURCE_LANGUAGE}). Use 'es' for Spanish audio",
+    )
+    parser.add_argument(
         "--target-lang",
         default=None,
         help=f"Target language for translation (default: {config.TARGET_LANGUAGE})",
@@ -188,6 +193,8 @@ def main():
     # Apply CLI overrides to config
     if args.model:
         config.WHISPER_MODEL = args.model
+    if args.source_lang:
+        config.SOURCE_LANGUAGE = args.source_lang
     if args.target_lang:
         config.TARGET_LANGUAGE = args.target_lang
     if args.compute:
