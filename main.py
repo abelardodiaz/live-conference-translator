@@ -6,10 +6,10 @@ Modes:
   Offline: Processes a YouTube URL or local audio/video file
 
 Usage:
-    python main.py                                # live mode (WASAPI)
-    python main.py --url "https://youtube.com/..." # download + process
-    python main.py --file recording.mp3            # process local file
-    python main.py --model medium                  # better quality
+    python main.py                                # live — system audio (WASAPI)
+    python main.py --mic                          # live — microphone
+    python main.py --url "https://youtube.com/..." # offline — download + process
+    python main.py --file recording.mp3            # offline — local file
     python main.py --list-devices                  # show audio devices
 """
 
@@ -62,10 +62,21 @@ def parse_args():
     )
     # Live mode options
     parser.add_argument(
+        "--mic",
+        action="store_true",
+        help="Capture microphone instead of system audio",
+    )
+    parser.add_argument(
         "--device",
         type=int,
         default=None,
-        help="Audio device index for live mode (use --list-devices to see available)",
+        help="Audio device index for system capture (use --list-devices to see available)",
+    )
+    parser.add_argument(
+        "--mic-device",
+        type=int,
+        default=None,
+        help="Audio device index for microphone (use --list-devices to see available)",
     )
     parser.add_argument(
         "--list-devices",
@@ -90,7 +101,12 @@ def run_live(args):
     display_queue = queue.Queue(maxsize=50)
 
     # Create components
-    capture = AudioCapture(audio_queue, device_index=args.device)
+    if args.mic:
+        capture = AudioCapture(audio_queue, device_index=args.mic_device, mode="mic")
+        source_label = "MICROPHONE"
+    else:
+        capture = AudioCapture(audio_queue, device_index=args.device, mode="loopback")
+        source_label = "SYSTEM AUDIO"
     transcriber = Transcriber(audio_queue, text_queue)
     translator = Translator(text_queue, [logger_queue, display_queue])
     logger = TranscriptLogger(logger_queue)
@@ -105,7 +121,7 @@ def run_live(args):
     ]
 
     print("=" * 60)
-    print("  Live Conference Translator — LIVE MODE")
+    print(f"  Live Conference Translator — {source_label}")
     print(f"  Model: {config.WHISPER_MODEL} | Lang: {config.SOURCE_LANGUAGE}→{config.TARGET_LANGUAGE}")
     print("=" * 60)
     print("\nStarting pipeline...")

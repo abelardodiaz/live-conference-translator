@@ -20,13 +20,20 @@ Captura audio del sistema en Windows en tiempo real, lo transcribe (inglés) con
 
 ### Modo Live — conferencias en tiempo real
 
-Captura el audio del sistema (lo que suena por parlantes/audífonos) y muestra subtítulos en terminal.
+Captura audio y muestra subtítulos en terminal. Dos fuentes disponibles:
 
 ```powershell
-python main.py                        # modelo small (default)
+# Audio del sistema (lo que suena por parlantes/audífonos)
+python main.py                        # default
+python main.py --device 5             # dispositivo específico
+
+# Micrófono (tu voz)
+python main.py --mic                  # mic por defecto
+python main.py --mic --mic-device 3   # mic específico
+
+# Opciones comunes
 python main.py --model tiny           # más rápido, menos calidad
-python main.py --list-devices         # ver dispositivos de audio
-python main.py --device 5             # elegir dispositivo específico
+python main.py --list-devices         # ver dispositivos (INPUT vs LOOPBACK)
 ```
 
 ### Modo Offline — YouTube y archivos locales
@@ -69,7 +76,9 @@ La primera vez descarga el modelo Whisper (~500MB para `small`).
 | `--url URL` | URL de YouTube u otro sitio para procesar offline |
 | `--file PATH` | Archivo local de audio/video para procesar offline |
 | `--model NAME` | Modelo Whisper: tiny, base, small, medium, large-v3 |
-| `--device N` | Índice de dispositivo de audio (modo live) |
+| `--mic` | Capturar micrófono en vez de audio del sistema |
+| `--device N` | Índice de dispositivo para audio del sistema |
+| `--mic-device N` | Índice de dispositivo para micrófono |
 | `--list-devices` | Listar dispositivos de audio disponibles |
 | `--target-lang XX` | Idioma destino: es, pt, fr, de, etc. |
 | `--compute TYPE` | Tipo de cómputo: int8, float16, float32 |
