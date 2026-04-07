@@ -24,6 +24,9 @@ WHISPER_SAMPLE_RATE = 16000
 # --- Transcript output ---
 TRANSCRIPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcripts")
 
+# --- Offline/file mode output ---
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+
 # --- Display ---
 # "terminal" or "gui" (gui not yet implemented)
 DISPLAY_MODE = "terminal"

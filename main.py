@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Live Conference Translator — real-time system audio transcription and translation.
+"""Live Conference Translator — real-time and offline audio transcription and translation.
 
-Captures system audio via WASAPI loopback, transcribes with faster-whisper,
-translates EN→ES with Google Translate, and displays live in terminal.
+Modes:
+  Live:    Captures system audio via WASAPI loopback (default)
+  Offline: Processes a YouTube URL or local audio/video file
 
 Usage:
-    python main.py                        # default (small model)
-    python main.py --model medium         # better quality (needs more RAM/GPU)
-    python main.py --model tiny           # fastest, lower quality
-    python main.py --list-devices         # show available audio devices
-    python main.py --device 5             # use specific audio device index
+    python main.py                                # live mode (WASAPI)
+    python main.py --url "https://youtube.com/..." # download + process
+    python main.py --file recording.mp3            # process local file
+    python main.py --model medium                  # better quality
+    python main.py --list-devices                  # show audio devices
 """
 
 import argparse
@@ -20,33 +21,29 @@ import threading
 import time
 
 import config
-from audio_capture import AudioCapture
-from transcriber import Transcriber
-from translator import Translator
-from transcript_logger import TranscriptLogger
-from display import Display
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Live Conference Translator — real-time audio transcription & translation"
+        description="Live Conference Translator — real-time and offline audio transcription & translation"
     )
+    # Mode selection
+    parser.add_argument(
+        "--url",
+        default=None,
+        help="YouTube or other URL to download and process offline",
+    )
+    parser.add_argument(
+        "--file",
+        default=None,
+        help="Local audio/video file to process offline",
+    )
+    # Common options
     parser.add_argument(
         "--model",
         default=None,
         help=f"Whisper model size (default: {config.WHISPER_MODEL}). "
              "Options: tiny, base, small, medium, large-v3, distil-large-v3",
-    )
-    parser.add_argument(
-        "--device",
-        type=int,
-        default=None,
-        help="Audio device index (use --list-devices to see available devices)",
-    )
-    parser.add_argument(
-        "--list-devices",
-        action="store_true",
-        help="List available audio devices and exit",
     )
     parser.add_argument(
         "--target-lang",
@@ -58,24 +55,33 @@ def parse_args():
         default=None,
         help=f"Compute type: int8, float16, float32 (default: {config.WHISPER_COMPUTE_TYPE})",
     )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help=f"Output directory for offline mode (default: {config.OUTPUT_DIR})",
+    )
+    # Live mode options
+    parser.add_argument(
+        "--device",
+        type=int,
+        default=None,
+        help="Audio device index for live mode (use --list-devices to see available)",
+    )
+    parser.add_argument(
+        "--list-devices",
+        action="store_true",
+        help="List available audio devices and exit",
+    )
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
-
-    # Handle --list-devices
-    if args.list_devices:
-        AudioCapture.list_devices()
-        return
-
-    # Apply CLI overrides to config
-    if args.model:
-        config.WHISPER_MODEL = args.model
-    if args.target_lang:
-        config.TARGET_LANGUAGE = args.target_lang
-    if args.compute:
-        config.WHISPER_COMPUTE_TYPE = args.compute
+def run_live(args):
+    """Run in live capture mode (WASAPI loopback)."""
+    from audio_capture import AudioCapture
+    from transcriber import Transcriber
+    from translator import Translator
+    from transcript_logger import TranscriptLogger
+    from display import Display
 
     # Create queues
     audio_queue = queue.Queue(maxsize=10)
@@ -84,7 +90,6 @@ def main():
     display_queue = queue.Queue(maxsize=50)
 
     # Create components
-    # Translator fans out to both logger and display queues
     capture = AudioCapture(audio_queue, device_index=args.device)
     transcriber = Transcriber(audio_queue, text_queue)
     translator = Translator(text_queue, [logger_queue, display_queue])
@@ -100,7 +105,7 @@ def main():
     ]
 
     print("=" * 60)
-    print("  Live Conference Translator")
+    print("  Live Conference Translator — LIVE MODE")
     print(f"  Model: {config.WHISPER_MODEL} | Lang: {config.SOURCE_LANGUAGE}→{config.TARGET_LANGUAGE}")
     print("=" * 60)
     print("\nStarting pipeline...")
@@ -109,7 +114,6 @@ def main():
         t.start()
         time.sleep(0.1)
 
-    # Handle Ctrl+C gracefully
     def shutdown(sig=None, frame=None):
         print("\n\nShutting down...")
         capture.stop()
@@ -127,11 +131,57 @@ def main():
 
     signal.signal(signal.SIGINT, shutdown)
 
-    # Run display in main thread (blocks until stopped)
     try:
         display.run()
     except KeyboardInterrupt:
         shutdown()
+
+
+def run_offline(args):
+    """Run in offline mode (file or URL)."""
+    from file_processor import FileProcessor
+
+    output_dir = args.output_dir or config.OUTPUT_DIR
+    processor = FileProcessor(output_dir=output_dir)
+
+    if args.url:
+        from downloader import Downloader
+
+        downloader = Downloader()
+        try:
+            audio_path, title = downloader.download(args.url)
+            processor.process(audio_path, title=title)
+        finally:
+            downloader.cleanup()
+    else:
+        import os
+        audio_path = args.file
+        title = os.path.splitext(os.path.basename(audio_path))[0]
+        processor.process(audio_path, title=title)
+
+
+def main():
+    args = parse_args()
+
+    # Handle --list-devices
+    if args.list_devices:
+        from audio_capture import AudioCapture
+        AudioCapture.list_devices()
+        return
+
+    # Apply CLI overrides to config
+    if args.model:
+        config.WHISPER_MODEL = args.model
+    if args.target_lang:
+        config.TARGET_LANGUAGE = args.target_lang
+    if args.compute:
+        config.WHISPER_COMPUTE_TYPE = args.compute
+
+    # Route to the right mode
+    if args.url or args.file:
+        run_offline(args)
+    else:
+        run_live(args)
 
 
 if __name__ == "__main__":
