@@ -1,7 +1,8 @@
 venv/
 __pycache__/
 *.pyc
-transcripts/*.txt
+transcripts/
+.claude/commands/
 output/
 temp/
 .env

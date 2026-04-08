@@ -28,7 +28,7 @@ project:
 
 server:
   location: windows
-  base_path: C:\Users\abela\prweb\public\live-conference-translator
+  base_path: .
 
 service:
   type: none

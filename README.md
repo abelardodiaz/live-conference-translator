@@ -45,7 +45,7 @@ Descarga y procesa videos completos. Genera archivos .txt, .srt y .vtt en ambos 
 python main.py --url "https://youtube.com/watch?v=xxxxx"
 
 # Desde archivo local
-python main.py --file "C:\Users\abela\Downloads\conferencia.mp4"
+python main.py --file "conferencia.mp4"
 
 # Audio en español (solo transcribe, sin traducir)
 python main.py --url "https://..." --source-lang es
